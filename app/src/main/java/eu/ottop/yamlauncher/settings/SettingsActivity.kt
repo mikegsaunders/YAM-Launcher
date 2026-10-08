@@ -220,7 +220,10 @@ class SettingsActivity : AppCompatActivity() {
                 val backupData = JSONObject(jsonData)
 
                 // Verify this backup is for this app
-                if (backupData.getString("app_id") != application.packageName) {
+                // Debug builds use a ".dev" suffix; accept backups from the release app too.
+                if (backupData.getString("app_id") != application.packageName.removeSuffix(".dev") &&
+                    backupData.getString("app_id") != application.packageName
+                ) {
                     throw IllegalArgumentException(getString(R.string.restore_wrong_app))
                 }
 
