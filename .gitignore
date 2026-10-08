@@ -74,3 +74,5 @@ obj/
 
 # Kotlin
 .kotlin/
+# Release signing (fork)
+signing.properties

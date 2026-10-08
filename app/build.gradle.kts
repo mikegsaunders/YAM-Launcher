@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
 }
@@ -11,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 37
         versionCode = 17
-        versionName = "2.3"
+        versionName = "2.3-fork1"
     }
 
     dependenciesInfo {
@@ -24,6 +26,23 @@ android {
         disable += "NewApi"
         // Allow the build to continue even with lint errors to catch new issues
         abortOnError = false
+    }
+
+    // Fork release signing comes from the gitignored signing.properties at the repo root.
+    val signing = Properties().apply {
+        rootProject.file("signing.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    }
+    val releaseStoreFile = signing.getProperty("RELEASE_STORE_FILE")?.let { file(it) }
+
+    signingConfigs {
+        if (releaseStoreFile?.exists() == true) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = signing.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = signing.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = signing.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -43,14 +62,12 @@ android {
                 "proguard-rules.pro"
             )
             resValue("string", "app_name", "YAM Launcher")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlin {
-        jvmToolchain(17)
     }
     buildFeatures {
         aidl = true
