@@ -694,10 +694,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         clock.setOnClickListener {
             if (sharedPreferenceManager.isClockGestureEnabled()) {
-                handleLaunchOrFallback(clockApp, "clock") {
+                handleLaunchOrFallback(clockApp, "clock", fallback = {
                     val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)
                     if (intent.resolveActivity(packageManager) != null) startActivity(intent)
-                }
+                })
             }
         }
 
@@ -801,14 +801,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     private fun openDateApp() {
         if (!sharedPreferenceManager.isDateGestureEnabled()) return
-        handleLaunchOrFallback(dateApp, "date") {
+        handleLaunchOrFallback(dateApp, "date", fallback = {
             try {
                 startActivity(Intent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR)))
             } catch (_: ActivityNotFoundException) {
                 logger.w("MainActivity", "No calendar app found when clicking date")
                 Toast.makeText(this, getString(R.string.no_calendar_app), Toast.LENGTH_SHORT).show()
             }
-        }
+        })
     }
 
     private fun openWeatherApp() {
@@ -2195,6 +2195,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     }
 
     private inner class DateGestureListener : GestureListener() {
+        // Claim the gesture on touch-down. Otherwise the date view never receives ACTION_UP,
+        // so taps are never confirmed and the pending long-press opens settings instead.
+        override fun onDown(e: MotionEvent): Boolean = true
+
         override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
             when (dateSectionAt(e)) {
                 DateSection.WEATHER -> openWeatherApp()
