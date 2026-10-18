@@ -26,5 +26,7 @@ object FontMap {
         "ubuntu_light" to R.font.ubuntu_light,
         "ubuntu_condensed_regular" to R.font.ubuntu_condensed_regular,
         "workbench" to R.font.workbench,
+        // CaskaydiaCove Nerd Font (Cascadia Code, SIL OFL 1.1 — see licenses/), as used on the desktop.
+        "caskaydia_cove" to R.font.caskaydia_cove,
     )
 }

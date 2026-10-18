@@ -122,6 +122,11 @@
     <string name="weather">Weather</string>
     <string name="set_weather_app">Set Weather App</string>
     <string name="no_weather_app">No Weather app found</string>
+    <string name="train">Train</string>
+    <string name="show_train">Show Train Icon</string>
+    <string name="train_summary">A train icon on the date line that opens your train app</string>
+    <string name="set_train_app">Set Train App</string>
+    <string name="no_train_app">No train app set</string>
     <string name="gps_location">GPS Location</string>
     <string name="latest_location">Latest GPS location</string>
     <string name="set_manual_location">Set Manual Location</string>

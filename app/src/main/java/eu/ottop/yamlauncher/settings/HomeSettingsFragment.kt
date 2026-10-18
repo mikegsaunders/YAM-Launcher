@@ -36,6 +36,7 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
     private var notificationDotsPref: SwitchPreference? = null
     private var screenTimePref: SwitchPreference? = null
     private var weatherAppPref: Preference? = null
+    private var trainAppPref: Preference? = null
 
     private val curboxPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -62,6 +63,13 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
         notificationDotsPref = findPreference("notificationDots")
         screenTimePref = findPreference("screenTimeEnabled")
         weatherAppPref = findPreference("weatherSwipeApp")
+        trainAppPref = findPreference("trainSwipeApp")
+
+        trainAppPref?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                uiUtils.switchFragment(requireActivity(), GestureAppsFragment.newInstance("train"))
+                true
+            }
 
         weatherAppPref?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
@@ -189,6 +197,7 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
         rightSwipePref?.summary = sharedPreferenceManager.getGestureName("right")
         doubleTapAppPref?.summary = sharedPreferenceManager.getGestureName("doubleTap")
         weatherAppPref?.summary = sharedPreferenceManager.getGestureName("weather")
+        trainAppPref?.summary = sharedPreferenceManager.getGestureName("train")
 
         updateDoubleTapAppPreferenceState()
     }

@@ -122,6 +122,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             R.id.app6, R.id.app7, R.id.app8, R.id.app9, R.id.app10,
             R.id.app11, R.id.app12, R.id.app13, R.id.app14, R.id.app15
         )
+
+        /** Placeholder the date view draws as a monochrome train icon. */
+        val TRAIN_GLYPH = eu.ottop.yamlauncher.views.IconTextClock.TRAIN_ICON.toString()
+
+        /** Each date-line section (weather, battery, screen time, train) sits on its own line. */
+        const val DATE_SEPARATOR = "\n"
+
+        /** Retry delay after a failed weather fetch. */
+        const val WEATHER_RETRY_MS = 30_000L
+
+        /** Opened when the train icon is tapped and no train app has been picked. */
+        const val DEFAULT_TRAIN_PACKAGE = "com.trains.app"
     }
 
     /** Handles weather data fetching and temperature display */
@@ -225,6 +237,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     private lateinit var clockApp: Pair<LauncherActivityInfo?, Int?>
     private lateinit var dateApp: Pair<LauncherActivityInfo?, Int?>
     private lateinit var weatherApp: Pair<LauncherActivityInfo?, Int?>
+    private lateinit var trainApp: Pair<LauncherActivityInfo?, Int?>
+
+    /** True when the last weather fetch failed, so the update loop retries sooner. */
+    @Volatile
+    private var lastWeatherFailed = false
 
     private lateinit var leftSwipeActivity: Pair<LauncherActivityInfo?, Int?>
     private lateinit var rightSwipeActivity: Pair<LauncherActivityInfo?, Int?>
@@ -289,7 +306,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
                     updateWeather()
-                    delay(sharedPreferenceManager.getWeatherUpdateIntervalMs())
+                    // After a failed fetch (e.g. the network is still waking after unlock),
+                    // retry soon rather than waiting a whole interval.
+                    delay(if (lastWeatherFailed) WEATHER_RETRY_MS else sharedPreferenceManager.getWeatherUpdateIntervalMs())
                 }
             }
         }
@@ -343,7 +362,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         dateText = binding.textDate
 
-        dateElements = mutableListOf(dateText.format12Hour.toString(), dateText.format24Hour.toString(), "", "", "")
+        dateElements = mutableListOf(dateText.format12Hour.toString(), dateText.format24Hour.toString(), "", "", "", "")
 
         menuTitle = binding.menuTitle
 
@@ -656,6 +675,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         rightSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "right")
         doubleTapApp = gestureUtils.getSwipeInfo(launcherApps, "doubleTap")
         weatherApp = gestureUtils.getSwipeInfo(launcherApps, "weather")
+        trainApp = gestureUtils.getSwipeInfo(launcherApps, "train")
+        updateTrainIcon()
 
         swipeThreshold = sharedPreferenceManager.getSwipeThreshold()
         swipeVelocityThreshold = sharedPreferenceManager.getSwipeVelocity()
@@ -766,9 +787,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
     }
 
-    private enum class DateSection { WEATHER, BATTERY }
+    private enum class DateSection { WEATHER, BATTERY, SCREEN_TIME, TRAIN }
 
-    /** Finds the logical section under a tap, including sections that wrap to another line. */
+    /** Finds the section (one per line) under a tap, including sections that wrap to another line. */
     private fun dateSectionAt(event: MotionEvent): DateSection? {
         val layout = dateText.layout ?: return null
         if (layout.lineCount == 0) return null
@@ -776,22 +797,23 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         val vertical = (event.y - dateText.totalPaddingTop).toInt()
             .coerceIn(0, (layout.height - 1).coerceAtLeast(0))
         val line = layout.getLineForVertical(vertical)
-        val offset = layout.getOffsetForHorizontal(
-            line,
-            event.x - dateText.totalPaddingLeft
-        )
+        // Sections each start on their own line, so a tap anywhere along a line counts
+        // for the section that line belongs to (not just on its characters).
+        val offset = layout.getLineStart(line)
         val rendered = dateText.text?.toString().orEmpty()
         var cursor = 0
 
         // The rendered date/time is followed by each non-empty dynamic section.
         val sections = listOf(
             DateSection.WEATHER to dateElements[2],
-            DateSection.BATTERY to dateElements[3]
+            DateSection.BATTERY to dateElements[3],
+            DateSection.SCREEN_TIME to dateElements[4],
+            DateSection.TRAIN to dateElements[5]
         ).filter { it.second.isNotEmpty() }
         for ((section, value) in sections) {
-            val separatorStart = rendered.indexOf(" | ", cursor)
+            val separatorStart = rendered.indexOf(DATE_SEPARATOR, cursor)
             if (separatorStart < 0) return null
-            val start = separatorStart + 3
+            val start = separatorStart + DATE_SEPARATOR.length
             val end = (start + value.length).coerceAtMost(rendered.length)
             if (offset in start until end) return section
             cursor = end
@@ -818,6 +840,23 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 startActivity(intent)
             } else {
                 Toast.makeText(this, getString(R.string.no_weather_app), Toast.LENGTH_SHORT).show()
+            }
+        }, requireGestureEnabled = false)
+    }
+
+    /** Shows or hides the train glyph at the end of the date line. */
+    private fun updateTrainIcon() {
+        modifyDate(if (sharedPreferenceManager.isTrainEnabled()) TRAIN_GLYPH else "", 5)
+    }
+
+    /** Opens the chosen train app, or the Trains app if none has been picked. */
+    private fun openTrainApp() {
+        handleLaunchOrFallback(trainApp, "train", {
+            val intent = packageManager.getLaunchIntentForPackage(DEFAULT_TRAIN_PACKAGE)
+            if (intent != null) {
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, getString(R.string.no_train_app), Toast.LENGTH_SHORT).show()
             }
         }, requireGestureEnabled = false)
     }
@@ -969,6 +1008,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             "clockSwipe", "clockSwipeApp" -> clockApp = gestureUtils.getSwipeInfo(launcherApps, "clock")
             "dateSwipe", "dateSwipeApp" -> dateApp = gestureUtils.getSwipeInfo(launcherApps, "date")
             "weatherSwipeApp" -> weatherApp = gestureUtils.getSwipeInfo(launcherApps, "weather")
+            "trainSwipeApp" -> trainApp = gestureUtils.getSwipeInfo(launcherApps, "train")
+            "trainEnabled" -> updateTrainIcon()
             "leftSwipe", "leftSwipeApp" -> leftSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "left")
             "rightSwipe", "rightSwipeApp" -> rightSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "right")
             "doubleTapAction", "doubleTapSwipeApp" -> doubleTapApp = gestureUtils.getSwipeInfo(launcherApps, "doubleTap")
@@ -1037,7 +1078,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         1 = 24h time
         2 = Weather
         3 = Battery level
-        4 = Screen time*/
+        4 = Screen time
+        5 = Train icon*/
         dateElements[index] = value
         dateText.format12Hour = buildDateLine(0)
         dateText.format24Hour = buildDateLine(1)
@@ -1045,14 +1087,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     private fun buildDateLine(dateIndex: Int): String {
         val dateFormat = dateElements[dateIndex]
-        val extraText = listOf(dateElements[2], dateElements[3], dateElements[4])
+        val extraText = listOf(dateElements[2], dateElements[3], dateElements[4], dateElements[5])
             .filter { it.isNotEmpty() }
-            .joinToString(" | ")
+            .joinToString(DATE_SEPARATOR)
             .replace("'", "''")
 
         // TextClock treats its value as a date/time pattern. Quote dynamic text so letters such
         // as the h and m in "2h 20m" are displayed literally instead of being reformatted.
-        return if (extraText.isEmpty()) dateFormat else "$dateFormat' | $extraText'"
+        return if (extraText.isEmpty()) dateFormat else "$dateFormat'$DATE_SEPARATOR$extraText'"
     }
 
     fun backToHome(animSpeed: Long = sharedPreferenceManager.getAnimationSpeed()) {
@@ -1160,8 +1202,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     suspend fun updateWeatherText() {
         val temp = weatherSystem.getTemp()
+        lastWeatherFailed = temp.isEmpty()
         withContext(Dispatchers.Main) {
-            modifyDate(temp, 2)
+            // A failed fetch returns "": keep showing the last good reading instead of blanking it.
+            if (temp.isNotEmpty() || !sharedPreferenceManager.isWeatherEnabled()) {
+                modifyDate(temp, 2)
+            }
         }
     }
 
@@ -2203,7 +2249,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             when (dateSectionAt(e)) {
                 DateSection.WEATHER -> openWeatherApp()
                 DateSection.BATTERY -> openBatterySettings()
-                null -> openDateApp()
+                DateSection.TRAIN -> openTrainApp()
+                DateSection.SCREEN_TIME, null -> openDateApp()
             }
             return true
         }

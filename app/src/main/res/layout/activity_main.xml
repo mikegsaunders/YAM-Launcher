@@ -229,13 +229,13 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <TextClock
+            <eu.ottop.yamlauncher.views.IconTextClock
                 android:id="@+id/textDate"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:format12Hour="dd MMM yyyy"
                 android:format24Hour="dd MMM yyyy"
-                android:lineSpacingExtra="8sp"
+                android:lineSpacingExtra="14sp"
                 android:paddingHorizontal="2dp"
                 android:textAlignment="textStart"
                 android:textAppearance="@android:style/TextAppearance.DeviceDefault"

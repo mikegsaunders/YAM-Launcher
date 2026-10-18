@@ -116,6 +116,23 @@
             app:key="screenTimeEnabled" />
     </PreferenceCategory>
     <PreferenceCategory
+        app:allowDividerAbove="false"
+        app:allowDividerBelow="false"
+        app:title="@string/train">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:summary="@string/train_summary"
+            android:title="@string/show_train"
+            app:dependency="dateEnabled"
+            app:key="trainEnabled" />
+        <Preference
+            app:dependency="trainEnabled"
+            app:key="trainSwipeApp"
+            app:selectable="true"
+            app:title="@string/set_train_app" />
+    </PreferenceCategory>
+    <PreferenceCategory
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:allowDividerAbove="false"

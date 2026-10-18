@@ -321,6 +321,11 @@ class SharedPreferenceManager(private val context: Context) {
      */
     fun isWeatherEnabled(): Boolean = store.boolean("weatherEnabled", false)
 
+    /**
+     * Checks if the train icon is shown on the date line.
+     */
+    fun isTrainEnabled(): Boolean = store.boolean("trainEnabled", false)
+
     /** Checks if Curbox screen time is displayed below the clock. */
     fun isScreenTimeEnabled(): Boolean = store.boolean("screenTimeEnabled", false)
 
@@ -660,6 +665,6 @@ class SharedPreferenceManager(private val context: Context) {
     }
 
     private companion object {
-        val GESTURE_DIRECTIONS = setOf("clock", "date", "left", "right", "doubleTap", "weather")
+        val GESTURE_DIRECTIONS = setOf("clock", "date", "left", "right", "doubleTap", "weather", "train")
     }
 }
