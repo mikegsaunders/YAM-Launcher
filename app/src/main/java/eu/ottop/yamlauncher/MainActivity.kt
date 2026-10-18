@@ -129,6 +129,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         /** Each date-line section (weather, battery, screen time, train) sits on its own line. */
         const val DATE_SEPARATOR = "\n"
 
+        /** A cached weather reading older than this isn't shown. */
+        const val WEATHER_CACHE_MAX_AGE_MS = 3 * 60 * 60 * 1000L
+        const val KEY_LAST_WEATHER = "last_weather"
+        const val KEY_LAST_WEATHER_AT = "last_weather_at"
+
         /** Retry delay after a failed weather fetch. */
         const val WEATHER_RETRY_MS = 30_000L
 
@@ -238,6 +243,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     private lateinit var dateApp: Pair<LauncherActivityInfo?, Int?>
     private lateinit var weatherApp: Pair<LauncherActivityInfo?, Int?>
     private lateinit var trainApp: Pair<LauncherActivityInfo?, Int?>
+
+    /** Last good weather reading, kept apart from settings so it isn't included in backups. */
+    private val weatherCache by lazy { getSharedPreferences("weather_cache", MODE_PRIVATE) }
 
     /** True when the last weather fetch failed, so the update loop retries sooner. */
     @Volatile
@@ -677,6 +685,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         weatherApp = gestureUtils.getSwipeInfo(launcherApps, "weather")
         trainApp = gestureUtils.getSwipeInfo(launcherApps, "train")
         updateTrainIcon()
+        showCachedWeather()
 
         swipeThreshold = sharedPreferenceManager.getSwipeThreshold()
         swipeVelocityThreshold = sharedPreferenceManager.getSwipeVelocity()
@@ -842,6 +851,17 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 Toast.makeText(this, getString(R.string.no_weather_app), Toast.LENGTH_SHORT).show()
             }
         }, requireGestureEnabled = false)
+    }
+
+    /**
+     * Shows the last good weather reading straight away (e.g. after a reboot or
+     * update) until a fresh fetch lands. Readings older than a few hours are skipped.
+     */
+    private fun showCachedWeather() {
+        if (!sharedPreferenceManager.isWeatherEnabled() || dateElements[2].isNotEmpty()) return
+        val text = weatherCache.getString(KEY_LAST_WEATHER, null) ?: return
+        val age = System.currentTimeMillis() - weatherCache.getLong(KEY_LAST_WEATHER_AT, 0L)
+        if (age in 0..WEATHER_CACHE_MAX_AGE_MS) modifyDate(text, 2)
     }
 
     /** Shows or hides the train glyph at the end of the date line. */
@@ -1203,6 +1223,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     suspend fun updateWeatherText() {
         val temp = weatherSystem.getTemp()
         lastWeatherFailed = temp.isEmpty()
+        if (temp.isNotEmpty()) {
+            weatherCache.edit()
+                .putString(KEY_LAST_WEATHER, temp)
+                .putLong(KEY_LAST_WEATHER_AT, System.currentTimeMillis())
+                .apply()
+        }
         withContext(Dispatchers.Main) {
             // A failed fetch returns "": keep showing the last good reading instead of blanking it.
             if (temp.isNotEmpty() || !sharedPreferenceManager.isWeatherEnabled()) {
