@@ -171,6 +171,16 @@ class UIUtils(private val context: Context) {
         val color = sharedPreferenceManager.getTextColor()
         val shadowEnabled = sharedPreferenceManager.isTextShadowEnabled()
         applyColorsRecursively(view, color, shadowEnabled)
+        applyAccents(view)
+    }
+
+    /** Spacedust accents on the home screen: cyan clock, orange weather symbol. */
+    private fun applyAccents(view: View) {
+        val accents = sharedPreferenceManager.getAccentColors()
+        view.findViewById<TextView>(R.id.textClock)?.let {
+            it.setTextColor(accents?.first ?: sharedPreferenceManager.getTextColor())
+        }
+        view.findViewById<eu.ottop.yamlauncher.views.IconTextClock>(R.id.textDate)?.iconColor = accents?.second
     }
 
     /**
@@ -226,7 +236,7 @@ class UIUtils(private val context: Context) {
             val insetController = window.insetsController
             // Determine if status bar should be light or dark based on text color
             when (sharedPreferenceManager.getTextString()) {
-                "#FFF3F3F3" -> insetController?.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS)
+                "#FFF3F3F3", "#FFECF0C1" -> insetController?.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS)
                 "#FF0C0C0C" -> insetController?.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS)
                 "material" -> {
                     val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
@@ -240,7 +250,7 @@ class UIUtils(private val context: Context) {
             @Suppress("DEPRECATION")
             val decorView = window.decorView
             when (sharedPreferenceManager.getTextString()) {
-                "#FFF3F3F3" -> decorView.systemUiVisibility = decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                "#FFF3F3F3", "#FFECF0C1" -> decorView.systemUiVisibility = decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 "#FF0C0C0C" -> decorView.systemUiVisibility = decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                 "material" -> {
                     val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK

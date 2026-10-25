@@ -65,6 +65,14 @@ class SharedPreferenceManager(private val context: Context) {
     }
 
     /**
+     * Spacedust accents, on when the text colour is Spacedust's cream: the clock
+     * in its cyan; weather and train icons and notification dots in its orange.
+     * Null when the text is any other colour, so everything stays one colour.
+     */
+    fun getAccentColors(): Pair<Int, Int>? =
+        if (getTextString() == SPACEDUST_TEXT) SPACEDUST_CYAN to SPACEDUST_ORANGE else null
+
+    /**
      * Gets raw text color string (for status bar logic).
      */
     fun getTextString(): String {
@@ -665,6 +673,10 @@ class SharedPreferenceManager(private val context: Context) {
     }
 
     private companion object {
+        const val SPACEDUST_TEXT = "#FFECF0C1"
+        const val SPACEDUST_CYAN = 0xFF06AFC7.toInt()
+        const val SPACEDUST_ORANGE = 0xFFFF8A3A.toInt()
+
         val GESTURE_DIRECTIONS = setOf("clock", "date", "left", "right", "doubleTap", "weather", "train")
     }
 }

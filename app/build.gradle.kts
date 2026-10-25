@@ -12,8 +12,8 @@ android {
         applicationId = "eu.ottop.yamlauncher"
         minSdk = 24
         targetSdk = 37
-        versionCode = 20
-        versionName = "2.3-fork4"
+        versionCode = 21
+        versionName = "2.3-fork5"
     }
 
     dependenciesInfo {

@@ -6,12 +6,15 @@
         <item>黒</item>
         <item>グレー</item>
         <item>白</item>
+        <item>Spacedust</item>
+        <item>Spacedust 70%</item>
         <item>マテリアル</item>
     </string-array>
 
     <string-array name="color_options">
         <item>ライト</item>
         <item>ダーク</item>
+        <item>Spacedust</item>
         <item>マテリアル</item>
     </string-array>
 

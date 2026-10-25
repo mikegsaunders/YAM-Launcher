@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.text.SpannableString
 import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.text.style.ReplacementSpan
 import android.util.AttributeSet
 import android.widget.TextClock
@@ -27,8 +28,18 @@ class IconTextClock @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : TextClock(context, attrs, defStyleAttr) {
 
+    /** Colour for the weather symbol; null draws it in the text colour. The train icon stays in the text colour. */
+    var iconColor: Int? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            text = text?.toString()
+        }
+
     override fun setText(text: CharSequence?, type: BufferType?) {
-        if (text == null || !text.contains(TRAIN_ICON)) {
+        val accent = iconColor
+        val hasWeather = accent != null && text?.any { it in WEATHER_ICONS } == true
+        if (text == null || (!text.contains(TRAIN_ICON) && !hasWeather)) {
             super.setText(text, type)
             return
         }
@@ -37,6 +48,16 @@ class IconTextClock @JvmOverloads constructor(
         while (index >= 0) {
             spannable.setSpan(IconSpan(), index, index + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             index = text.indexOf(TRAIN_ICON, index + 1)
+        }
+        if (accent != null) {
+            text.forEachIndexed { i, c ->
+                if (c in WEATHER_ICONS) {
+                    // Keep the text-style selector (U+FE0E) in the same span, or the
+                    // glyph falls back to its colour emoji.
+                    val end = if (text.getOrNull(i + 1) == '\uFE0E') i + 2 else i + 1
+                    spannable.setSpan(ForegroundColorSpan(accent), i, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
         }
         super.setText(spannable, BufferType.SPANNABLE)
     }
@@ -73,6 +94,9 @@ class IconTextClock @JvmOverloads constructor(
     }
 
     companion object {
+        /** The weather glyphs WeatherSystem uses. */
+        private const val WEATHER_ICONS = "☀☁☂❄⛈"
+
         /** Private-use character marking where the train icon goes. */
         const val TRAIN_ICON = ''
     }

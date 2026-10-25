@@ -6,6 +6,8 @@
         <item>#FF000000</item>
         <item>#FF1B1B1B</item>
         <item>#FFD6D6D6</item>
+        <item>#FF0A1E24</item>
+        <item>#B30A1E24</item>
         <item>material</item>
 
     </string-array>
@@ -13,6 +15,7 @@
     <string-array name="color_values" translatable="false">
         <item>#FFF3F3F3</item>
         <item>#FF0C0C0C</item>
+        <item>#FFECF0C1</item>
         <item>material</item>
     </string-array>
 

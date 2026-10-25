@@ -6,12 +6,15 @@
         <item>黑色</item>
         <item>灰色</item>
         <item>白色</item>
+        <item>Spacedust</item>
+        <item>Spacedust 70%</item>
         <item>Material</item>
     </string-array>
 
     <string-array name="color_options">
         <item>浅色</item>
         <item>深色</item>
+        <item>Spacedust</item>
         <item>Material</item>
     </string-array>
 

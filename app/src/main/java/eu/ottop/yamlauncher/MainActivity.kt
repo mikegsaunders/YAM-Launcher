@@ -1775,7 +1775,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
 
         val packagesWithNotifications = notificationListener.getPackagesWithNotifications()
-        val textColor = sharedPreferenceManager.getTextColor()
+        // Spacedust's orange for notification dots when its accents are on.
+        val textColor = sharedPreferenceManager.getAccentColors()?.second ?: sharedPreferenceManager.getTextColor()
 
         for ((i, id) in SHORTCUT_IDS.withIndex()) {
             val textView = findViewById<TextView>(id) ?: continue

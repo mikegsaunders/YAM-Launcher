@@ -6,12 +6,15 @@
         <item>Czarny</item>
         <item>Szary</item>
         <item>Biały</item>
+        <item>Spacedust</item>
+        <item>Spacedust 70%</item>
         <item>Material</item>
     </string-array>
 
     <string-array name="color_options">
         <item>Jasny</item>
         <item>Ciemny</item>
+        <item>Spacedust</item>
         <item>Material</item>
     </string-array>
 
